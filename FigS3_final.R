@@ -7,12 +7,13 @@
 if (!requireNamespace("BiocManager", quietly = TRUE))
   install.packages("BiocManager")
 
-require(ggplot2)
-require(reshape2)
-require(dplyr)
-require(zFPKM)
-require(DESeq2)
-require(pheatmap)
+library(ggplot2)
+library(reshape2)
+library(dplyr)
+library(zFPKM)
+library(DESeq2)
+library(pheatmap)
+library(tidyverse)
 
 ##Preprocessing
 
@@ -37,7 +38,7 @@ measles[grepl("MF", colnames(measles))] <- NULL
 
 #removing extra samples
 measles <-
-  measles[-which(names(measles) %in% c('AA003', "AA009", "AA010", "AA011", "AA015"))]
+  measles[-which(names(measles) %in% c('AA001','AA002','AA004','AA003', "AA009", "AA010", "AA011", "AA015"))]
 
 
 measles_header <- colnames(measles)[2:ncol(measles)]
@@ -84,7 +85,7 @@ inner_data <-
 
 
 ## create a new dataframe just_inner_data that does not have the gene data in the front for correlation matrix
-just_inner_data <- inner_data[, c(6:545)]
+just_inner_data <- inner_data[, c(6:544)]
 
 ##Filter reads based on sum total of fpkm counts across all 534 experiments
 
@@ -125,7 +126,7 @@ ggplot(data = melted_cormat_inner_log2[melted_cormat_inner_log2$Var1 %in% measle
   geom_tile()
 
 pheatmap(
-  cormat_inner_log2[c(526:545), ],
+  cormat_inner_log2[c(526:539), ],
   cluster_rows = FALSE,
   cluster_cols = FALSE,
   width = 8,
@@ -133,10 +134,10 @@ pheatmap(
   fontsize = 4
 )
 
-write.table(cormat_inner_log2, "correlation_table.csv", sep = ',')
+#write.table(cormat_inner_log2, "correlation_table.csv", sep = ',')
 
 cormat_inner_log2_df_MA001 <-
-  cormat_inner_log2_df[, order(cormat_inner_log2_df[526, ], decreasing = T)]
+  cormat_inner_log2_df[, order(cormat_inner_log2_df[530, ], decreasing = T)]
 
 
 top100_list <- colnames(cormat_inner_log2_df_MA001[1:100])
@@ -155,25 +156,53 @@ labels_top100 <-
 ### VIKAS: This is the heatmap figure
 library(tidyverse)
 
-for_heatmap <- cormat_inner_log2_df_MA001[c(526:540), c(1:100)]
+for_heatmap <- cormat_inner_log2_df_MA001[c(526:539), c(1:100)]
 name_order <-
   c(
     "MA001",
     "MA002",
     "FB018",
-    "AA004",
+    #"AA004",
     "MA007",
     "FB009",
-    "AA001",
+    #"AA001",
     "MA005",
-    "AA002",
+    #"AA002",
+    "MA009",
     "MA003",
     "MA004",
     "FB017",
     "MA008",
     "FB001",
-    "MA006"
+    "MA006",
+    "MA010"
   )
+# A = AA, B = MA, C = FB
+differentiation<- data.frame(
+  Differentiation = c(
+    "B",
+    "B",
+    "C",
+    #"A",
+    "B",
+    "C",
+    #"A",
+    "B",
+    #"A",
+    "B",
+    "B",
+    "B",
+    "C",
+    "B",
+    "C",
+    "B",
+    "B"
+    )
+  )
+rownames(differentiation) = name_order
+
+
+
 temp <- tibble::rownames_to_column(for_heatmap)
 
 reordered_for_heatmap <- temp %>%
@@ -182,40 +211,41 @@ rownames(reordered_for_heatmap) <- reordered_for_heatmap$rowname
 reordered_for_heatmap$rowname <- NULL
 
 
-png(
-  filename = "brainspan_labeled_heatmap.png",
-  width = 8,
-  height = 6,
-  units = "in",
-  res = 300
-)
+# png(
+#   filename = "brainspan_labeled_heatmap_final.png",
+#   width = 8,
+#   height = 6,
+#   units = "in",
+#   res = 300
+# )
 pheatmap(
   reordered_for_heatmap,
   cluster_rows = FALSE,
   cluster_cols = FALSE,
   labels_col = labels_top100,
+  #annotation_row = differentiation,
   labels_row = c(
     "FA10 uninfected (1)",
     "FA10 uninfected (2)",
     "FA10 uninfected (3)",
-    "FA10 uninfected (4)",
     "FA10 + MeV wt (1)",
     "FA10 + MeV wt (2)",
-    "FA10 + MeV wt (3)",
-    "FA10 + MeV L454W (1)",
-    "FA10 + MeV L454W (2)",
+    "FA10 + MeV L454W",
+    "FA10 + MeV L454W/E455G",
     "FA11 uninfected (1)",
     "FA11 uninfected (2)",
     "FA11 uninfected (3)",
     "FA11 + MeV wt (1)",
     "FA11 + MeV wt (2)",
-    "FA11 + MeV L454W (1)"
+    "FA11 + MeV L454W",
+    "FA11 + MeV L454W/E455G"
   ),
   width = 11,
+  filename = "brainspan_labeled_heatmap_final.png",
   height = 8,
   fontsize = 7,
   fontsize_col = 5
 )
 
 dev.off()
-save_pheatmap_pdf(brainspan_labeled_heatmap, "brainspan_labeled_heatmap.pdf")
+#save_pheatmap_pdf(brainspan_labeled_heatmap, "brainspan_labeled_heatmap.pdf")
